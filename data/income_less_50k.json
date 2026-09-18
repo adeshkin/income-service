@@ -1,0 +1,15 @@
+{
+  "age": 39,
+  "workclass": "Private",
+  "education": "HS-grad",
+  "education_num": 9,
+  "marital_status": "Divorced",
+  "occupation": "Priv-house-serv",
+  "relationship": "Unmarried",
+  "race": "White",
+  "sex": "Female",
+  "capital_gain": 0,
+  "capital_loss": 0,
+  "hours_per_week": 22,
+  "native_country": "United-States"
+}

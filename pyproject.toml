@@ -1,0 +1,30 @@
+[project]
+name = "income-service"
+version = "0.1.0"
+description = ""
+
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "fastapi>=0.141.1",
+    "joblib>=1.6.0",
+    "pandas>=3.0.5",
+    "psycopg[binary]>=3.3.5",
+    "pydantic-settings>=2.15.0",
+    "scikit-learn>=1.9.1",
+    "uvicorn>=0.53.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "httpx",
+    "locust",
+    "ruff",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "income"
