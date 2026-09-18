@@ -17,7 +17,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest",
-    "httpx",
+    "httpx2",
     "locust",
     "ruff",
 ]

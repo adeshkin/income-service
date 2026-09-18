@@ -84,9 +84,8 @@ def predict(x: Features, bg: BackgroundTasks):
                       model_version=app.state.version,
                       request_id=request_id,
                       latency_ms=latency_ms)
-# Добавьте /v1/predict/batch: схема с rows: list[Features] и границами от 1 до 1000, из всех строк
-# собирается один DataFrame, модель вызывается один раз. Код показывали в бонусе, он есть на
-# слайде 18 преподавательской презентации, но у вас схема своя.
+
+
 @app.post("/v1/predict/batch")
 def predict_batch(rows: list[Features], bg: BackgroundTasks):
     t0 = time.perf_counter()
@@ -100,11 +99,12 @@ def predict_batch(rows: list[Features], bg: BackgroundTasks):
     status_code = 200
     income_more_50k = scores >= app.state.meta["threshold_lr"]
 
-    # bg.add_task(db.save_prediction, request_id, payload, score, income_more_50k, app.state.version, latency_ms,
-    #             status_code)
+    bg.add_task(db.save_prediction, request_id, payloads[0], scores[0], income_more_50k[0], app.state.version,
+                latency_ms,
+                status_code)
 
-    return Prediction(score=score,
-                      income_more_50k=income_more_50k,
+    return Prediction(score=scores[0],
+                      income_more_50k=income_more_50k[0],
                       model_version=app.state.version,
                       request_id=request_id,
                       latency_ms=latency_ms)
