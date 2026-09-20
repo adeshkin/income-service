@@ -21,14 +21,6 @@ services:
       timeout: 3s
       retries: 20
 
-  locust:
-    image: locustio/locust:2.46.6
-    entrypoint: [ "locust" ]
-    working_dir: /mnt/locust
-    volumes:
-      - ./locustfile.py:/mnt/locust/locustfile.py:ro
-      - ./:/results
-
 volumes:
   pgdata:
 
