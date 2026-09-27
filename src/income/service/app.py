@@ -1,10 +1,11 @@
 import time
 import uuid
-import pandas as pd
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Response
-from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
+
 import joblib
+import pandas as pd
+from fastapi import BackgroundTasks, FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 from income import db
 from income.config import settings

@@ -1,3 +1,4 @@
+locust_results/run*0_*.csv
 artifacts
 .idea
 # Byte-compiled / optimized / DLL files

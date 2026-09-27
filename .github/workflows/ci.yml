@@ -1,0 +1,126 @@
+name: ci
+on:
+  push: {branches: [master]}
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_PASSWORD: test, POSTGRES_DB: income}
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:test@localhost:5432/income
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with: {enable-cache: true}
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run pytest
+
+  build:
+    needs: tests
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    steps:
+      - uses: actions/checkout@v7
+      - run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    # джоба идёт не в облаке GitHub, а на runner в Docker на машине с kind
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, kind]
+    concurrency: {group: deploy-kind}
+    timeout-minutes: 10
+    permissions: {contents: read, packages: read}
+    env:
+      KIND_CLUSTER: sem3n
+    steps:
+      - uses: actions/checkout@v7
+      - run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: kind, kubectl и доступ к кластеру
+        run: |
+          B=~/.local/bin && mkdir -p $B && echo "$B" >> "$GITHUB_PATH"
+          [ -x $B/kind ] || curl -sSLo $B/kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-linux-amd64
+          [ -x $B/kubectl ] || curl -sSLo $B/kubectl https://dl.k8s.io/v1.37.0/bin/linux/amd64/kubectl
+          chmod +x $B/kind $B/kubectl
+          $B/kind export kubeconfig --name "$KIND_CLUSTER" --internal
+          $B/kubectl get nodes
+
+      - name: образ в кластер
+        run: |
+          docker pull "$IMAGE"
+          kind load docker-image "$IMAGE" --name "$KIND_CLUSTER"
+
+      - name: подтягиваем секреты
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          kubectl create secret generic income-secrets \
+          --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" \
+          --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres:5432/income" \
+          --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: база
+        run: |
+          kubectl apply -f k8s/postgres.yaml
+          kubectl rollout status deploy/postgres --timeout=180s
+
+      - name: сервис
+        run: |
+          kubectl apply -f k8s/
+          kubectl set image deploy/income-service api="$IMAGE"
+          kubectl rollout status deploy/income-service --timeout=180s
+
+      - name: smoke
+        # через Ingress, как ходят пользователи: из сети kind узел виден по имени, Traefik слушает NodePort 30080
+        run: |
+          U="http://$KIND_CLUSTER-control-plane:30080"; H="Host: income.localhost"
+
+          curl --fail -s --retry 5 --retry-all-errors -H "$H" $U/health | tee health.json; echo
+          grep -q '"model_version":"income-v' health.json
+
+          curl --fail -s -X POST -H "$H" $U/v1/predict \
+            -H "Content-Type: application/json" -d @good.json | tee pred.json; echo
+
+          sleep 2
+
+          RID=$(jq -r .request_id pred.json)
+          kubectl exec deploy/postgres -- psql -U postgres -d income \
+            -tAc "SELECT count(*) FROM predictions WHERE request_id = '$RID'" | grep -qx 1
+
+      - name: диагностика
+        if: failure()
+        run: |
+          kubectl get pods -A -o wide
+          kubectl get ingress -A
+          kubectl describe deploy/income-service | tail -20
+          kubectl logs deploy/income-service --tail=50 || true
