@@ -109,7 +109,7 @@ jobs:
           grep -q '"model_version":"income-v' health.json
 
           curl --fail -s -X POST -H "$H" $U/v1/predict \
-            -H "Content-Type: application/json" -d @good.json | tee pred.json; echo
+            -H "Content-Type: application/json" -d @data/income_more_50k.json | tee pred.json; echo
 
           sleep 2
 
