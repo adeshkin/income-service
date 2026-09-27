@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: income-config
+data:
+  LOG_LEVEL: "INFO"
+  MODEL_PATH: models/baseline_logreg.joblib
