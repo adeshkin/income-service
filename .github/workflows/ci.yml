@@ -1,6 +1,6 @@
 name: ci
 on:
-  push: {branches: [main]}
+  push: {branches: [master]}
   pull_request:
   workflow_dispatch:
 
@@ -10,13 +10,13 @@ jobs:
     services:
       postgres:
         image: postgres:16
-        env: {POSTGRES_PASSWORD: test, POSTGRES_DB: churn}
+        env: {POSTGRES_PASSWORD: test, POSTGRES_DB: income}
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 3s --health-retries 10
     env:
-      DATABASE_URL: postgresql://postgres:test@localhost:5432/churn
+      DATABASE_URL: postgresql://postgres:test@localhost:5432/income
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -84,9 +84,9 @@ jobs:
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          kubectl create secret generic churn-secrets \
+          kubectl create secret generic income-secrets \
           --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" \
-          --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres:5432/churn" \
+          --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres:5432/income" \
           --dry-run=client -o yaml | kubectl apply -f -
 
       - name: база
@@ -97,16 +97,16 @@ jobs:
       - name: сервис
         run: |
           kubectl apply -f k8s/
-          kubectl set image deploy/churn-service api="$IMAGE"
-          kubectl rollout status deploy/churn-service --timeout=180s
+          kubectl set image deploy/income-service api="$IMAGE"
+          kubectl rollout status deploy/income-service --timeout=180s
 
       - name: smoke
         # через Ingress, как ходят пользователи: из сети kind узел виден по имени, Traefik слушает NodePort 30080
         run: |
-          U="http://$KIND_CLUSTER-control-plane:30080"; H="Host: churn.localhost"
+          U="http://$KIND_CLUSTER-control-plane:30080"; H="Host: income.localhost"
 
           curl --fail -s --retry 5 --retry-all-errors -H "$H" $U/health | tee health.json; echo
-          grep -q '"model_version":"churn-v' health.json
+          grep -q '"model_version":"income-v' health.json
 
           curl --fail -s -X POST -H "$H" $U/v1/predict \
             -H "Content-Type: application/json" -d @good.json | tee pred.json; echo
@@ -114,7 +114,7 @@ jobs:
           sleep 2
 
           RID=$(jq -r .request_id pred.json)
-          kubectl exec deploy/postgres -- psql -U postgres -d churn \
+          kubectl exec deploy/postgres -- psql -U postgres -d income \
             -tAc "SELECT count(*) FROM predictions WHERE request_id = '$RID'" | grep -qx 1
 
       - name: диагностика
@@ -122,5 +122,5 @@ jobs:
         run: |
           kubectl get pods -A -o wide
           kubectl get ingress -A
-          kubectl describe deploy/churn-service | tail -20
-          kubectl logs deploy/churn-service --tail=50 || true
+          kubectl describe deploy/income-service | tail -20
+          kubectl logs deploy/income-service --tail=50 || true
