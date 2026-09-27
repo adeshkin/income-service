@@ -27,7 +27,7 @@ jobs:
 
   build:
     needs: tests
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions: {contents: read, packages: write}
     steps:
