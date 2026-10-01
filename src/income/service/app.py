@@ -2,10 +2,11 @@ import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 import joblib
 import pandas as pd
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
@@ -32,6 +33,11 @@ class Features(BaseModel):
     capital_loss: int = Field(ge=0)
     hours_per_week: int = Field(ge=0)
     native_country: str | None = None
+
+
+
+class FeatureRows(BaseModel):
+    rows: Annotated[list[Features], Field(min_length=1, max_length=1000)]
 
 
 class Prediction(BaseModel):
@@ -124,11 +130,10 @@ def predict(x: Features, bg: BackgroundTasks):
     score = float(app.state.pipeline.predict_proba(frame)[0, 1])
 
     latency_ms = round((time.perf_counter() - t0) * 1000, 2)
-    status_code = 200
-    income_more_50k = score >= app.state.meta["threshold_lr"]
+    income_more_50k = score >= app.state.meta["threshold"]
 
     bg.add_task(db.save_prediction, request_id, payload, score, income_more_50k, app.state.version, latency_ms,
-                status_code)
+                status.HTTP_200_OK)
 
     return Prediction(score=score,
                       income_more_50k=income_more_50k,
@@ -138,24 +143,39 @@ def predict(x: Features, bg: BackgroundTasks):
 
 
 @app.post("/v1/predict/batch")
-def predict_batch(rows: list[Features], bg: BackgroundTasks):
+def predict_batch(rows: FeatureRows, bg: BackgroundTasks):
     t0 = time.perf_counter()
-    request_id = str(uuid.uuid4())
-    payloads = [x.model_dump() for x in rows]
+    payloads = [x.model_dump() for x in rows.rows]
     frame = pd.DataFrame(payloads).reindex(columns=app.state.meta["features"])
 
     scores = app.state.pipeline.predict_proba(frame)[:, 1]
 
     latency_ms = round((time.perf_counter() - t0) * 1000, 2)
-    status_code = 200
-    income_more_50k = scores >= app.state.meta["threshold_lr"]
+    results = []
+    for payload, raw_score in zip(payloads, scores):
+        request_id = str(uuid.uuid4())
+        score = float(raw_score)
+        income_more_50k = bool(score >= app.state.meta["threshold"])
 
-    bg.add_task(db.save_prediction, request_id, payloads[0], scores[0], income_more_50k[0], app.state.version,
-                latency_ms,
-                status_code)
+        bg.add_task(
+            db.save_prediction,
+            request_id,
+            payload,
+            score,
+            income_more_50k,
+            app.state.version,
+            latency_ms,
+            status.HTTP_200_OK,
+        )
 
-    return Prediction(score=scores[0],
-                      income_more_50k=income_more_50k[0],
-                      model_version=app.state.version,
-                      request_id=request_id,
-                      latency_ms=latency_ms)
+        results.append(
+            Prediction(
+                score=score,
+                income_more_50k=income_more_50k,
+                model_version=app.state.version,
+                request_id=request_id,
+                latency_ms=latency_ms,
+            )
+        )
+
+    return results
