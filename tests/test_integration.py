@@ -2,6 +2,7 @@ import os
 
 import psycopg
 import pytest
+from fastapi import status
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -16,7 +17,7 @@ def test_prediction_is_logged(client, good_row):
 
     with psycopg.connect(DATABASE_URL) as conn:
         row = conn.execute(
-            "SELECT model_version, score, features->>'education', status_code "
+            "SELECT model_version, score, features->>'education', status_code"
             "FROM predictions WHERE request_id = %s",
             (body["request_id"],),
         ).fetchone()
@@ -25,4 +26,4 @@ def test_prediction_is_logged(client, good_row):
     assert row[0] == body["model_version"]
     assert row[1] == pytest.approx(body["score"])
     assert row[2] == good_row["education"]
-    assert row[3] == 200
+    assert row[3] == status.HTTP_200_OK

@@ -1,3 +1,4 @@
+import os
 from uuid import UUID, uuid4
 
 import pandas as pd
@@ -5,8 +6,6 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
-
-from income.config import settings
 
 
 def test_predict_smoke(client, good_row):
@@ -40,11 +39,8 @@ def test_predict_matches_pipeline(client, good_row):
 
     assert response.json()["score"] == pytest.approx(float(expected), abs=1e-12)
 
-
-@pytest.mark.skipif(
-    not settings.database_url,
-    reason="DATABASE_URL не задан: проверка записи в БД пропущена",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+@pytest.mark.skipif(not DATABASE_URL, reason="нужен Postgres: задайте DATABASE_URL")
 def test_validation_error_is_saved(client, good_row):
     payload = {
         **good_row,
@@ -52,7 +48,7 @@ def test_validation_error_is_saved(client, good_row):
         "workclass": f"test-{uuid4()}",
     }
 
-    with psycopg.connect(settings.database_url, row_factory=dict_row) as conn:
+    with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
         try:
             response = client.post("/v1/predict", json=payload)
 
