@@ -4,10 +4,9 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import status
 import joblib
 import pandas as pd
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
