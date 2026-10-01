@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS predictions (
     ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     model_version TEXT NOT NULL,
     features JSONB NOT NULL,
-    score DOUBLE PRECISION NOT NULL,
+    score DOUBLE PRECISION,
     latency_ms REAL,
-    income_more_50k BOOLEAN NOT NULL,
+    income_more_50k BOOLEAN,
     status_code INTEGER NOT NULL
 )
 """
@@ -24,8 +24,8 @@ def init() -> None:
         conn.execute(DDL)
 
 
-def save_prediction(request_id: str, features: dict, score: float, income_more_50k: bool, model_version: str,
-                    latency_ms: float, status_code: int) -> None:
+def save_prediction(request_id: str, features: dict, score: float | None, income_more_50k: bool | None, model_version: str,
+                    latency_ms: float | None, status_code: int) -> None:
     if not settings.database_url:
         return
     with psycopg.connect(settings.database_url) as conn:
