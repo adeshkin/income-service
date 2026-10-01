@@ -17,15 +17,15 @@ class Features(BaseModel):
     age: int = Field(ge=17, le=90)
     workclass: str | None = None
     education: str
-    education_num: int
+    education_num: int = Field(ge=0)
     marital_status: str
     occupation: str | None = None
     relationship: str
     race: str
     sex: str
-    capital_gain: int
-    capital_loss: int
-    hours_per_week: int
+    capital_gain: int = Field(ge=0)
+    capital_loss: int = Field(ge=0)
+    hours_per_week: int = Field(ge=0)
     native_country: str | None = None
 
 
