@@ -1,5 +1,4 @@
 import os
-
 import psycopg
 import pytest
 from fastapi import status
@@ -27,3 +26,20 @@ def test_prediction_is_logged(client, good_row):
     assert row[1] == pytest.approx(body["score"])
     assert row[2] == good_row["education"]
     assert row[3] == status.HTTP_200_OK
+
+
+def test_bad_prediction_is_logged(client, bad_row):
+    body = client.post("/v1/predict", json=bad_row).json()
+
+    with psycopg.connect(DATABASE_URL) as conn:
+        row = conn.execute(
+            "SELECT model_version, score, features->>'education', status_code"
+            "FROM predictions WHERE request_id = %s",
+            (body["request_id"],),
+        ).fetchone()
+
+    assert row is not None
+    assert row[0] == body["model_version"]
+    assert row[1] is None
+    assert row[2] == bad_row["education"]
+    assert row[3] == status.HTTP_422_UNPROCESSABLE_CONTENT
