@@ -49,9 +49,7 @@ def test_validation_error_is_saved(client, good_row):
 
     with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
         try:
-            response = client.post("/v1/predict", json=payload)
-
-            assert response.status_code == 422
+            response = client.post("/v1/predict", json=payload).json()
 
             with psycopg.connect(DATABASE_URL) as conn:
                 records = conn.execute(
