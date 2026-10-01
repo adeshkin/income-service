@@ -1,0 +1,34 @@
+{
+  "rows": [
+    {
+    "age": -10,
+    "workclass": "Private",
+    "education": "Bachelors",
+    "education_num": 13,
+    "marital_status": "Married-civ-spouse",
+    "occupation": "Exec-managerial",
+    "relationship": "Husband",
+    "race": "White",
+    "sex": "Male",
+    "capital_gain": 0,
+    "capital_loss": 0,
+    "hours_per_week": 45,
+    "native_country": "United-States"
+    },
+    {
+    "age": 39,
+    "workclass": "Private",
+    "education": "HS-grad",
+    "education_num": 9,
+    "marital_status": "Divorced",
+    "occupation": "Priv-house-serv",
+    "relationship": "Unmarried",
+    "race": "White",
+    "sex": "Female",
+    "capital_gain": 0,
+    "capital_loss": 0,
+    "hours_per_week": 22,
+    "native_country": "United-States"
+    }
+  ]
+}
