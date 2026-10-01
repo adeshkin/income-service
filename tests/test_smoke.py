@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 import pandas as pd
 import psycopg
 import pytest
+from fastapi import status
 from psycopg.rows import dict_row
 
 
@@ -47,7 +48,7 @@ def test_validation_error_is_saved(client, good_row):
         "workclass": f"test-{uuid4()}",
     }
     response = client.post("/v1/predict", json=payload)
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     request_id = response.json()["request_id"]
 
     with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
@@ -65,7 +66,7 @@ def test_validation_error_is_saved(client, good_row):
 
             record = records[0]
 
-            assert record["status_code"] == 422
+            assert record["status_code"] == status.HTTP_422_UNPROCESSABLE_CONTENT
             assert record["features"] == payload
             assert record["score"] is None
             assert record["income_more_50k"] is None
