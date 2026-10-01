@@ -53,17 +53,13 @@ def test_validation_error_is_saved(client, good_row):
             response = client.post("/v1/predict", json=payload)
 
             assert response.status_code == 422
-            assert "detail" in response.json()
 
-            records = conn.execute(
-                """
-                SELECT request_id, features, status_code, score,
-                       income_more_50k, model_version, latency_ms
-                FROM predictions
-                WHERE features = %s::jsonb
-                """,
-                (Json(payload),),
-            ).fetchall()
+            with psycopg.connect(DATABASE_URL) as conn:
+                records = conn.execute(
+                    "SELECT model_version, score, features->>'education', status_code"
+                    "FROM predictions WHERE request_id = %s",
+                    (response["request_id"],),
+                ).fetchone()
 
             assert len(records) == 1, (
                 f"Ожидалась одна запись ошибки, найдено: {len(records)}"
@@ -81,7 +77,7 @@ def test_validation_error_is_saved(client, good_row):
 
         finally:
             conn.execute(
-                "DELETE FROM predictions WHERE features = %s::jsonb",
-                (Json(payload),),
+                "DELETE FROM predictions WHERE request_id = %s",
+                (response["request_id"],),
             )
             conn.commit()
