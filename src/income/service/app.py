@@ -111,7 +111,8 @@ async def save_prediction_errors(request: Request, call_next):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_version": getattr(app.state, "version", "unknown")}
+    return {"status": "ok", "model_version": getattr(app.state, "version", "unknown"),
+            "pipeline_version": 1.1}
 
 
 @app.get("/ready")
