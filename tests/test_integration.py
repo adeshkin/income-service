@@ -17,7 +17,7 @@ def test_prediction_is_logged(client, good_row):
 
     with psycopg.connect(DATABASE_URL) as conn:
         row = conn.execute(
-            "SELECT model_version, score, features->>'education', status_code"
+            "SELECT model_version, score, features->>'education', status_code "
             "FROM predictions WHERE request_id = %s",
             (body["request_id"],),
         ).fetchone()
@@ -34,7 +34,7 @@ def test_bad_prediction_is_logged(client, bad_row):
 
     with psycopg.connect(DATABASE_URL) as conn:
         row = conn.execute(
-            "SELECT model_version, score, features->>'education', status_code"
+            "SELECT model_version, score, features->>'education', status_code "
             "FROM predictions WHERE request_id = %s",
             (body["request_id"],),
         ).fetchone()
