@@ -4,9 +4,10 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Annotated
 
+from fastapi import status
 import joblib
 import pandas as pd
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, status
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
@@ -122,6 +123,9 @@ def ready():
 
 @app.post("/v1/predict")
 def predict(x: Features, bg: BackgroundTasks):
+    """
+        Single prediction
+    """
     t0 = time.perf_counter()
     request_id = str(uuid.uuid4())
     payload = x.model_dump()
@@ -144,6 +148,9 @@ def predict(x: Features, bg: BackgroundTasks):
 
 @app.post("/v1/predict/batch")
 def predict_batch(rows: FeatureRows, bg: BackgroundTasks):
+    """
+        Batch prediction
+    """
     t0 = time.perf_counter()
     payloads = [x.model_dump() for x in rows.rows]
     frame = pd.DataFrame(payloads).reindex(columns=app.state.meta["features"])
