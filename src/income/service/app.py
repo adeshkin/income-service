@@ -41,8 +41,8 @@ class FeatureRows(BaseModel):
 
 
 class Prediction(BaseModel):
-    score: float
-    income_more_50k: bool
+    score: float | None
+    income_more_50k: bool | None
     model_version: str
     request_id: str
     latency_ms: float
@@ -105,13 +105,25 @@ async def save_prediction_errors(request: Request, call_next):
         except Exception:
             logger.exception("Failed to save prediction error: %s", request_id)
 
+        prediction = Prediction(
+            score=None,
+            income_more_50k=None,
+            model_version=getattr(app.state, "version", "unknown"),
+            request_id=request_id,
+            latency_ms=latency_ms,
+        )
+        response = JSONResponse(
+            status_code=response.status_code,
+            content=prediction.model_dump(mode="json"),
+        )
+        
     return response
 
 
 @app.get("/health")
 def health():
     return {"status": "ok", "model_version": getattr(app.state, "version", "unknown"),
-            "pipeline_version": 1.1}
+            "model_path": settings.model_path}
 
 
 @app.get("/ready")

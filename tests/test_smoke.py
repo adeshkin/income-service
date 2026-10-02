@@ -1,12 +1,11 @@
+import os
 from uuid import UUID, uuid4
 
 import pandas as pd
 import psycopg
 import pytest
+from fastapi import status
 from psycopg.rows import dict_row
-from psycopg.types.json import Json
-
-from income.config import settings
 
 
 def test_predict_smoke(client, good_row):
@@ -40,33 +39,25 @@ def test_predict_matches_pipeline(client, good_row):
 
     assert response.json()["score"] == pytest.approx(float(expected), abs=1e-12)
 
-
-@pytest.mark.skipif(
-    not settings.database_url,
-    reason="DATABASE_URL не задан: проверка записи в БД пропущена",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+@pytest.mark.skipif(not DATABASE_URL, reason="нужен Postgres: задайте DATABASE_URL")
 def test_validation_error_is_saved(client, good_row):
     payload = {
         **good_row,
         "age": -10,
         "workclass": f"test-{uuid4()}",
     }
+    response = client.post("/v1/predict", json=payload)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    request_id = response.json()["request_id"]
 
-    with psycopg.connect(settings.database_url, row_factory=dict_row) as conn:
+    with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
         try:
-            response = client.post("/v1/predict", json=payload)
-
-            assert response.status_code == 422
-            assert "detail" in response.json()
-
             records = conn.execute(
-                """
-                SELECT request_id, features, status_code, score,
-                       income_more_50k, model_version, latency_ms
-                FROM predictions
-                WHERE features = %s::jsonb
-                """,
-                (Json(payload),),
+                "SELECT model_version, score, features, status_code, "
+                "income_more_50k, latency_ms, request_id "
+                "FROM predictions WHERE request_id = %s",
+                (request_id,),
             ).fetchall()
 
             assert len(records) == 1, (
@@ -75,7 +66,7 @@ def test_validation_error_is_saved(client, good_row):
 
             record = records[0]
 
-            assert record["status_code"] == 422
+            assert record["status_code"] == status.HTTP_422_UNPROCESSABLE_CONTENT
             assert record["features"] == payload
             assert record["score"] is None
             assert record["income_more_50k"] is None
@@ -85,7 +76,7 @@ def test_validation_error_is_saved(client, good_row):
 
         finally:
             conn.execute(
-                "DELETE FROM predictions WHERE features = %s::jsonb",
-                (Json(payload),),
+                "DELETE FROM predictions WHERE request_id = %s",
+                (request_id,),
             )
             conn.commit()

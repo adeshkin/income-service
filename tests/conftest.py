@@ -27,3 +27,21 @@ def good_row():
         "hours_per_week": 45,
         "native_country": "United-States"
     }
+
+@pytest.fixture()
+def bad_row():
+    return {
+        "age": -47,
+        "workclass": "Private",
+        "education": "Bachelors",
+        "education_num": 13,
+        "marital_status": "Married-civ-spouse",
+        "occupation": "Exec-managerial",
+        "relationship": "Husband",
+        "race": "White",
+        "sex": "Male",
+        "capital_gain": 0,
+        "capital_loss": 0,
+        "hours_per_week": 45,
+        "native_country": "United-States"
+    }
