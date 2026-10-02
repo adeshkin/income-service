@@ -59,12 +59,8 @@ curl -X POST http://localhost:8000/v1/predict \
 ## Тесты
 
 ```bash
-uv run pytest --disable-warnings
+uv run pytest 
 ```
-
-Контрольный прогон завершён успешно: 9 тестов пройдено.
-
-![Результат запуска тестов](images/pytest.png)
 
 ## Запуск через Docker Compose
 
@@ -92,8 +88,3 @@ kubectl port-forward svc/income-service 8000:80
 
 После проброса порта API доступен по адресу `http://localhost:8000`. Манифест создаёт две реплики приложения и `ClusterIP` Service.
 
-![Запущенные поды и ответы predict](images/pods_predict.png)
-
-## Подтверждение работы
-
-Краткий отчёт с результатами тестирования, проверки БД и Kubernetes-развёртывания находится в [REPORT.md](REPORT.md).
