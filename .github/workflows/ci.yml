@@ -49,7 +49,7 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE }}
-          cache-from: type=gha 
+          cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy:
@@ -108,7 +108,7 @@ jobs:
 
           kubectl exec deploy/postgres -- psql -U postgres -d income \
             -tc "SELECT count(*) FROM predictions" | grep -q 1
-      
+
       - name: диагностика
         if: failure()
 
