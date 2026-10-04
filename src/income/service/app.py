@@ -4,17 +4,23 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-import joblib
 import pandas as pd
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from prometheus_client import Counter, Gauge, Histogram
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from income import db
-from income.config import settings
+from income.model_store import load_model
 
 logger = logging.getLogger(__name__)
+
+PREDICTIONS = Counter("income_predictions_total", "Predictions by class", ["income_more_50k"])
+SCORE = Histogram("income_score", "Predicted income probability", buckets=[i / 10 for i in range(11)])
+MODEL_INFO = Gauge("income_model_info", "Model loaded by this pod", ["version"])
+LATENCY_BUCKETS = (0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1)  # штатные 0.1, 0.5, 1 с слишком грубые
 
 
 class Features(BaseModel):
@@ -50,10 +56,8 @@ class Prediction(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    bundle = joblib.load(settings.model_path)
-    app.state.pipeline = bundle["pipeline"]
-    app.state.meta = bundle["metadata"]
-    app.state.version = bundle["metadata"]["model_version"]
+    app.state.pipeline, app.state.meta, app.state.version = load_model()
+    MODEL_INFO.labels(app.state.version).set(1)
 
     db.init()
     yield
@@ -61,6 +65,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Income Service", version="1.0", lifespan=lifespan)
+Instrumentator().instrument(app, latency_lowr_buckets=LATENCY_BUCKETS).expose(app)
 
 
 @app.middleware("http")
@@ -122,8 +127,7 @@ async def save_prediction_errors(request: Request, call_next):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_version": getattr(app.state, "version", "unknown"),
-            "model_path": settings.model_path}
+    return {"status": "ok", "model_version": getattr(app.state, "version", "unknown")}
 
 
 @app.get("/ready")
@@ -147,6 +151,8 @@ def predict(x: Features, bg: BackgroundTasks):
 
     latency_ms = round((time.perf_counter() - t0) * 1000, 2)
     income_more_50k = score >= app.state.meta["threshold"]
+    PREDICTIONS.labels(str(income_more_50k).lower()).inc()
+    SCORE.observe(score)
 
     bg.add_task(db.save_prediction, request_id, payload, score, income_more_50k, app.state.version, latency_ms,
                 status.HTTP_200_OK)
