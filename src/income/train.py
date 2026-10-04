@@ -10,15 +10,19 @@ import os
 from pathlib import Path
 
 import mlflow
-import pandas as pd
 import numpy as np
+import pandas as pd
 import sklearn
 from mlflow import MlflowClient
 from mlflow.exceptions import MlflowException
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    precision_recall_curve,
+    roc_auc_score,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -89,7 +93,7 @@ def main() -> dict:
     pipeline = build_pipeline(C).fit(x_train, y_train)
     proba = pipeline.predict_proba(x_test)[:, 1]
     auc = float(roc_auc_score(y_test, proba))
-    precision, recall, thresholds = precision_recall_curve(y_test, proba)
+    _precision, recall, thresholds = precision_recall_curve(y_test, proba)
     threshold = float(thresholds[recall[:-1] >= 0.70].max())
 
     mlflow.set_experiment(EXPERIMENT)

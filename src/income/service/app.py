@@ -4,7 +4,6 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-import joblib
 import pandas as pd
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
