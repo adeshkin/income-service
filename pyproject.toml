@@ -7,12 +7,14 @@ requires-python = ">=3.11,<3.13"
 dependencies = [
     "fastapi>=0.141.1",
     "joblib>=1.6.0",
-    "jupyterlab>=4.6.4",
-    "matplotlib>=3.11.2",
+    "mlflow-skinny>=3.16,<4",
     "pandas>=3.0.5",
+    "prometheus-client>=0.26.0",
+    "prometheus-fastapi-instrumentator>=8.1.0",
     "psycopg[binary]>=3.3.5",
     "pydantic-settings>=2.15.0",
     "scikit-learn>=1.9.1",
+    "skops>=0.16.0",
     "uvicorn>=0.53.0",
 ]
 
