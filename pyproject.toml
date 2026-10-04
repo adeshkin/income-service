@@ -24,6 +24,7 @@ dev = [
     "httpx",
     "locust",
     "ruff",
+    "dvc>=3.67.1",
 ]
 
 [build-system]
