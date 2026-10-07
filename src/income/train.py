@@ -5,11 +5,11 @@
 Новая версия всегда получает алиас challenger. Алиас champion она получает, только если
 ROC-AUC на отложенной выборке лучше, чем у текущего champion (или champion ещё нет).
 """
+import hashlib
 import json
 import os
 from pathlib import Path
 
-import hashlib
 import mlflow
 import numpy as np
 import pandas as pd
