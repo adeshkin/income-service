@@ -1,6 +1,5 @@
 locust_results/*.csv
 artifacts
-models/baseline_logreg.joblib
 locust_results/run*0_*.csv
 .idea
 # Byte-compiled / optimized / DLL files
