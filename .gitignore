@@ -1,4 +1,4 @@
-locust_results/run*0_*.csv
+locust_results/*.csv
 artifacts
 models/baseline_logreg.joblib
 locust_results/run*0_*.csv
