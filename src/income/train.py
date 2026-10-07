@@ -27,7 +27,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-DATA_PATH = Path(os.getenv("DATA_PATH", "datasets/adult.csv"))
+DATA_PATH = Path(os.getenv("DATA_PATH", "dataset/adult.csv"))
 MODEL_NAME = os.getenv("MODEL_NAME", "income")
 EXPERIMENT = os.getenv("MLFLOW_EXPERIMENT", "income")
 C = float(os.getenv("C", "1.0"))
