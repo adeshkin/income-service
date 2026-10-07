@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 
+import hashlib
 import mlflow
 import numpy as np
 import pandas as pd
@@ -104,6 +105,7 @@ def main() -> dict:
         mlflow.log_params({"C": C, "model": "LogisticRegression", "seed": SEED, "data": str(DATA_PATH)})
         mlflow.log_metrics({"roc_auc": auc, "pr_auc": float(average_precision_score(y_test, proba)), "threshold": threshold})
         mlflow.log_dict(metadata, "metadata.json")
+        mlflow.log_param("data_md5", hashlib.md5(DATA_PATH.read_bytes()).hexdigest())
         info = mlflow.sklearn.log_model(pipeline, name="model", registered_model_name=MODEL_NAME,
                                         skops_trusted_types=SKOPS_TRUSTED)
         version = info.registered_model_version
