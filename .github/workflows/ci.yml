@@ -99,6 +99,7 @@ jobs:
         run: |
           kubectl apply -f k8s/
           kubectl set image deploy/income-service api="$IMAGE"
+          kubectl rollout restart deploy/income-service
           kubectl rollout status deploy/income-service --timeout=180s
 
       - name: smoke
