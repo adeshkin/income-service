@@ -108,9 +108,9 @@ jobs:
       - name: мониторинг и DAG
         run: |
           kubectl apply -f k8s/monitoring/
-          kubectl -n mlops create configmap airflow-dags --from-file=dags/ \
-            --dry-run=client -o yaml | kubectl apply -f -
-          kubectl -n mlops exec deploy/airflow -- airflow variables set income_image "$IMAGE"
+          # kubectl -n mlops create configmap airflow-dags --from-file=dags/ \
+          #   --dry-run=client -o yaml | kubectl apply -f -
+          # kubectl -n mlops exec deploy/airflow -- airflow variables set income_image "$IMAGE"
 
       - name: smoke
         # через Ingress, как ходят пользователи: из сети kind узел виден по имени, Traefik слушает NodePort 30080
