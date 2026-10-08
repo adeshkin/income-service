@@ -25,7 +25,7 @@ parser.add_argument("--bad", type=float, default=0.0)
 parser.add_argument("--recs", type=float, default=0.0)
 args = parser.parse_args()
 
-df = pd.read_csv("dataset/adult.csv").drop(columns=["customerID", "Churn"])
+df = pd.read_csv("dataset/adult.csv")
 df[df == '?'] = np.nan
     
 df = df.rename(columns={'education.num': 'education_num', 
