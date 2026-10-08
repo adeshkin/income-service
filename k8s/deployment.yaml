@@ -21,6 +21,9 @@ spec:
           envFrom:
             - configMapRef: {name: income-config}
             - secretRef: {name: income-secrets}
+          lifecycle:
+            preStop:
+              sleep: {seconds: 5}
           startupProbe:
             httpGet: {path: /health, port: 8000}
             failureThreshold: 30

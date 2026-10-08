@@ -41,23 +41,23 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: churn-rollout
+  name: income-rollout
   namespace: default
 rules:
   - apiGroups: [apps]
     resources: [deployments]
-    resourceNames: [churn-service]
+    resourceNames: [income-service]
     verbs: [get, patch]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: airflow-churn-rollout
+  name: airflow-income-rollout
   namespace: default
 subjects:
   - {kind: ServiceAccount, name: airflow, namespace: mlops}
 roleRef:
-  {apiGroup: rbac.authorization.k8s.io, kind: Role, name: churn-rollout}
+  {apiGroup: rbac.authorization.k8s.io, kind: Role, name: income-rollout}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
