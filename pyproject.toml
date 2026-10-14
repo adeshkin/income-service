@@ -5,6 +5,7 @@ description = ""
 
 requires-python = ">=3.11,<3.13"
 dependencies = [
+    "dvc[s3]>=3.67.1",
     "fastapi>=0.141.1",
     "joblib>=1.6.0",
     "mlflow-skinny>=3.16,<4",
