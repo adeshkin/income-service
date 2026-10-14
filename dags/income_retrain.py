@@ -15,7 +15,7 @@ from kubernetes.client import models as k8s
 
 @dag(
     # каждый день в 03:00 по Москве; пропущенные запуски не догоняем, в том числе при снятии с паузы
-    schedule=CronTriggerTimetable("0 3 * * *", timezone="Europe/Moscow"),
+    schedule=CronTriggerTimetable("0 8 * * *", timezone="Europe/Moscow"),
     catchup=False,
     params={"C": Param(1.0, type="number", exclusiveMinimum=0, description="регуляризация LogisticRegression")},
     tags=["income"],
@@ -29,7 +29,7 @@ def income_retrain():
         image="{{ var.value.income_image }}",
         image_pull_policy="IfNotPresent",
         # данных в образе нет: DVC берёт их из S3 по адресу изнутри кластера (remote cluster)
-        cmds=["sh", "-c", "uv run --no-sync dvc pull -r cluster datasets/adult.csv && uv run --no-sync python -m income.train"],
+        cmds=["sh", "-c", "uv run --no-sync dvc pull -r cluster dataset/adult.csv && uv run --no-sync python -m income.train"],
         env_vars={"MLFLOW_TRACKING_URI": "http://mlflow.mlops:5000", "C": "{{ params.C }}"},
         env_from=[k8s.V1EnvFromSource(secret_ref=k8s.V1SecretEnvSource(name="s3-credentials"))],
         do_xcom_push=True,
