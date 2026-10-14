@@ -1,0 +1,16 @@
+.venv/
+.git/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+.env
+k8s/
+tests/
+locustfile.py
+dags/
+platform/
+scripts/
+.dvc/cache/
+.dvc/tmp/
+.dvc/config.local
+dataset/*.csv
