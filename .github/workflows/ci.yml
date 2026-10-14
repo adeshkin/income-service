@@ -49,7 +49,6 @@ jobs:
 
   deploy:
     needs: build
-    # джоба идёт не в облаке GitHub, а на runner в Docker на машине с kind
     if: github.event_name == 'workflow_dispatch'
     runs-on: [self-hosted, kind]
     concurrency: {group: deploy-kind}
@@ -89,10 +88,6 @@ jobs:
           --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" \
           --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres:5432/income" \
           --dry-run=client -o yaml | kubectl apply -f -
-          # # публикация рекомендаций идёт из пода Airflow в namespace mlops: ей нужен адрес базы оттуда
-          # kubectl -n mlops create secret generic recs-db \
-          # --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres.default:5432/income" \
-          # --dry-run=client -o yaml | kubectl apply -f -
 
       - name: база
         run: |
@@ -113,7 +108,6 @@ jobs:
           kubectl -n mlops exec deploy/airflow -- airflow variables set income_image "$IMAGE"
 
       - name: smoke
-        # через Ingress, как ходят пользователи: из сети kind узел виден по имени, Traefik слушает NodePort 30080
         run: |
           U="http://$KIND_CLUSTER-control-plane:30080"; H="Host: income.localhost"
 
@@ -131,9 +125,6 @@ jobs:
           
           curl --fail -s -H "$H" $U/metrics | grep -q '^income_model_info{version="income-v'
 
-          # # рекомендации: 200 и десять товаров, если DAG уже публиковал; 503, если ещё нет. Всё остальное ошибка
-          # code=$(curl -s -o rec.json -w '%{http_code}' -H "$H" $U/v1/recommend/12347); cat rec.json; echo
-          # [ "$code" = 503 ] || { [ "$code" = 200 ] && jq -e '.items | length == 10' rec.json > /dev/null; }
 
       - name: диагностика
         if: failure()
