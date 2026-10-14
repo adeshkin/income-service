@@ -15,7 +15,7 @@ from kubernetes.client import models as k8s
 
 @dag(
     # каждый день в 03:00 по Москве; пропущенные запуски не догоняем, в том числе при снятии с паузы
-    schedule=CronTriggerTimetable("0 3 * * *", timezone="Europe/Moscow"),
+    schedule=CronTriggerTimetable("0 8 * * *", timezone="Europe/Moscow"),
     catchup=False,
     params={"C": Param(1.0, type="number", exclusiveMinimum=0, description="регуляризация LogisticRegression")},
     tags=["income"],
